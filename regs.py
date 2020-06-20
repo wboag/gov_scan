@@ -1,5 +1,5 @@
 import pandas as pd
-import urllib
+import requests
 import io
 import re
 import time
@@ -28,7 +28,7 @@ regs_sheet = page.worksheet('regs')
 # Get existing data (to avoid inserting a row that is already scraped)
 records = regs_sheet.get_all_records()
 seen_document_numbers = set([row['DOCUMENT_NUMBER'] for row in records])
-print len(seen_document_numbers )
+print(len(seen_document_numbers ))
 
 
 
@@ -36,11 +36,11 @@ print len(seen_document_numbers )
 # Navigate to the search button at the top of the page and click on "advanced search"
 # Narrow the search to "proposed rules" and click "search"
 query_url = 'https://www.federalregister.gov/documents/search.csv?conditions%5Btype%5D%5B%5D=PRORULE'
-f = urllib.urlopen(query_url)
-text = f.read()
+response = requests.get(query_url)
+text = response.text
 text = '\n'.join(text.split('\n')[:-1]) # for some reason, the final line isnt full. skip it
 
-regs_df = pd.read_csv(io.BytesIO(text))
+regs_df = pd.read_csv(io.BytesIO(text.encode()))
 regs_df.head()
 
 recent_document_numbers = reversed(regs_df.document_number.values[:50])
@@ -56,7 +56,7 @@ regs_df[['publication_date','title','agency_names','abstract','document_number',
 
 
 columns = regs_sheet.row_values(1)
-print columns
+print(columns)
 
 inserted_count = 0
 for document_number in tqdm.tqdm(recent_document_numbers):
@@ -78,8 +78,8 @@ for document_number in tqdm.tqdm(recent_document_numbers):
 
     # read due date from the page
     if document_number not in dates_due:
-        f = urllib.urlopen(reg.html_url)
-        text = f.read()
+        response = requests.get(reg.html_url)
+        text = response.text
         match = re.search('Comments Close:.*?(\d+/\d+/\d+)</dd>', text, re.DOTALL)
         if match:
             date_due = match.groups()[0]
@@ -100,5 +100,5 @@ for document_number in tqdm.tqdm(recent_document_numbers):
     seen_document_numbers.add(document_number)
     inserted_count += 1
 
-print 'inserted %d rows' % inserted_count
+print('inserted %d rows' % inserted_count)
 

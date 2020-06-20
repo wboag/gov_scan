@@ -1,7 +1,7 @@
 oauth2client
 selenium
 gspread
-urllib
+requests
 tqdm
 pandas
 numpy
